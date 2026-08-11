@@ -11,6 +11,7 @@ import branchRoutes from './routes/branch';
 import headquartersRoutes from './routes/headquarters';
 import supplierRoutes from './routes/supplier';
 import cartRoutes from './routes/cart';
+import ratingRoutes from './routes/rating';
 import { initializeDatabase } from './init-db';
 import { errorHandler } from './utils/errors';
 
@@ -38,7 +39,7 @@ app.use(
   cors({
     origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Cart-Key'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Cart-Key', 'X-Rating-Token'],
     credentials: true,
   }),
 );
@@ -84,6 +85,7 @@ app.use('/api/branches', branchRoutes);
 app.use('/api/headquarters', headquartersRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api', ratingRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello, world!');

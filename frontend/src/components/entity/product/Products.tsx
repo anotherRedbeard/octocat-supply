@@ -4,6 +4,8 @@ import { useQuery } from 'react-query';
 import { api } from '../../../api/config';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAddCartItemMutation } from '../../../api/cart';
+import ProductRatingSummary from './ProductRatingSummary';
+import RatingForm from './RatingForm';
 
 interface Product {
   productId: number;
@@ -213,6 +215,9 @@ export default function Products() {
                   >
                     {product.description}
                   </p>
+                  <div className="mb-4 min-h-[1.5rem]">
+                    <ProductRatingSummary productId={product.productId} />
+                  </div>
                   <div className="space-y-4 mt-auto">
                     <div className="flex justify-between items-center">
                       {hasDiscount ? (
@@ -299,6 +304,7 @@ export default function Products() {
             <div className="flex justify-end">
               <button
                 onClick={() => setShowModal(false)}
+                aria-label="Close product details"
                 className={`${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'} transition-colors duration-300`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -330,6 +336,10 @@ export default function Products() {
             >
               {selectedProduct.description}
             </p>
+            <div className="mt-6 space-y-6">
+              <ProductRatingSummary productId={selectedProduct.productId} showBreakdown />
+              <RatingForm productId={selectedProduct.productId} />
+            </div>
           </div>
         </div>
       )}

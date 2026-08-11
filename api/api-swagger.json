@@ -168,6 +168,221 @@
         }
       }
     },
+    "/api/products/{productId}/ratings": {
+      "get": {
+        "summary": "Get ratings and summary for a product",
+        "tags": [
+          "Ratings"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "productId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/XRatingTokenHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product ratings and server-calculated summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid product ID or rating token"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a product rating",
+        "tags": [
+          "Ratings"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "productId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Rating-Token",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "score"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Rating created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid product ID, score, or rating token"
+          },
+          "404": {
+            "description": "Product not found"
+          },
+          "409": {
+            "description": "This browser already rated this product"
+          }
+        }
+      }
+    },
+    "/api/ratings/{ratingId}": {
+      "put": {
+        "summary": "Update a browser-owned product rating",
+        "tags": [
+          "Ratings"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ratingId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Rating-Token",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "score"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rating updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid rating ID, score, or rating token"
+          },
+          "404": {
+            "description": "Rating not found"
+          },
+          "409": {
+            "description": "The browser does not own this rating"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a browser-owned product rating",
+        "tags": [
+          "Ratings"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ratingId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Rating-Token",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Rating deleted"
+          },
+          "400": {
+            "description": "Invalid rating ID or rating token"
+          },
+          "404": {
+            "description": "Rating not found"
+          },
+          "409": {
+            "description": "The browser does not own this rating"
+          }
+        }
+      }
+    },
     "/api/cart": {
       "get": {
         "summary": "Get the cart for the current cart key",
@@ -1967,6 +2182,108 @@
           }
         }
       },
+      "Rating": {
+        "type": "object",
+        "required": [
+          "ratingId",
+          "productId",
+          "score",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "ratingId": {
+            "type": "integer",
+            "description": "The unique identifier for the rating"
+          },
+          "productId": {
+            "type": "integer",
+            "description": "The product being rated"
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "The product score from one to five stars"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RatingSummary": {
+        "type": "object",
+        "required": [
+          "averageScore",
+          "ratingCount",
+          "distribution"
+        ],
+        "properties": {
+          "averageScore": {
+            "type": "number",
+            "format": "float",
+            "description": "The server-calculated average score"
+          },
+          "ratingCount": {
+            "type": "integer",
+            "description": "The number of ratings"
+          },
+          "distribution": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Number of ratings for each score from one to five"
+          }
+        }
+      },
+      "RatingMutationResponse": {
+        "type": "object",
+        "required": [
+          "rating",
+          "summary"
+        ],
+        "properties": {
+          "rating": {
+            "$ref": "#/components/schemas/Rating"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/RatingSummary"
+          }
+        }
+      },
+      "RatingListResponse": {
+        "type": "object",
+        "required": [
+          "ratings",
+          "summary",
+          "ownedRating"
+        ],
+        "properties": {
+          "ratings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Rating"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/RatingSummary"
+          },
+          "ownedRating": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Rating"
+              }
+            ]
+          }
+        }
+      },
       "CartView": {
         "type": "object",
         "required": [
@@ -1996,6 +2313,17 @@
       }
     },
     "parameters": {
+      "XRatingTokenHeader": {
+        "in": "header",
+        "name": "X-Rating-Token",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 255
+        },
+        "description": "Browser-local token used to identify the rating owner; this is not authentication"
+      },
       "XCartKeyHeader": {
         "in": "header",
         "name": "X-Cart-Key",
@@ -2039,6 +2367,10 @@
     {
       "name": "Products",
       "description": "API endpoints for managing products"
+    },
+    {
+      "name": "Ratings",
+      "description": "API endpoints for product ratings"
     },
     {
       "name": "Suppliers",
