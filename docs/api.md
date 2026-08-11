@@ -439,8 +439,10 @@ Request body:
 
 `status` is read from the body and passed to the repository without route-level
 validation. `deliveryPartner` is optional. Without it, the response is `200`
-with the updated Delivery object. With it, the handler executes
-`notify {deliveryPartner}` and responds with:
+with the updated Delivery object. With it, the handler validates
+`deliveryPartner` against an allowlist of known partners (`acme-logistics`,
+`ups`, `fedex`, `dhl`, `usps`), invokes `notify` via `execFile` (no shell) with
+`deliveryPartner` passed as a discrete argument, and responds with:
 
 ```json
 {
@@ -456,15 +458,11 @@ with the updated Delivery object. With it, the handler executes
 }
 ```
 
-Status codes are `200` for success, `404` with plain text when the delivery is
-missing, `500` with `{ "error": "..." }` if the external command fails, and
-the standard JSON database error envelope for other repository failures.
-
-Security caveat: `deliveryPartner` is interpolated directly into a shell
-command passed to Node's `exec`. Because this endpoint has no authentication,
-an attacker who can reach the API may be able to execute shell metacharacters.
-Do not expose this endpoint beyond a trusted environment until the command
-execution is removed or replaced with a safe, allow-listed process invocation.
+Status codes are `200` for success, `400` with the standard JSON database
+error envelope if `deliveryPartner` is not on the allowlist, `404` with plain
+text when the delivery is missing, `500` with `{ "error": { "code": "NOTIFY_FAILED", "message": "..." } }`
+if the external command fails, and the standard JSON database error envelope
+for other repository failures.
 
 ### Product by name
 

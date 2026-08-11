@@ -147,12 +147,14 @@
 
 import express from 'express';
 import { Delivery } from '../models/delivery';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { getDeliveriesRepository } from '../repositories/deliveriesRepo';
-import { NotFoundError } from '../utils/errors';
-
+import { NotFoundError, ValidationError } from '../utils/errors';
 
 const router = express.Router();
+
+// Known delivery partners the notify-service can be invoked for; anything else is rejected.
+const ALLOWED_DELIVERY_PARTNERS = new Set(['acme-logistics', 'ups', 'fedex', 'dhl', 'usps']);
 
 // Create a new delivery
 router.post('/', async (req, res, next) => {
@@ -202,10 +204,16 @@ router.put('/:id/status', async (req, res, next) => {
       const updatedDelivery = await repo.updateStatus(parseInt(req.params.id), status);
 
       if (deliveryPartner) {
-        exec(`notify ${deliveryPartner}`, (error, stdout) => {
+        if (typeof deliveryPartner !== 'string' || !ALLOWED_DELIVERY_PARTNERS.has(deliveryPartner)) {
+          throw new ValidationError(`Unknown deliveryPartner "${deliveryPartner}"`);
+        }
+
+        // execFile with an argument array never invokes a shell, so deliveryPartner cannot inject commands.
+        execFile('notify', [deliveryPartner], (error, stdout) => {
           if (error) {
-            console.error(`Error executing command: ${error}`);
-            return res.status(500).json({ error: error.message });
+            console.error('Error executing notify command:', error);
+            res.status(500).json({ error: { code: 'NOTIFY_FAILED', message: 'Failed to notify delivery partner' } });
+            return;
           }
           res.json({ delivery: updatedDelivery, commandOutput: stdout });
         });
