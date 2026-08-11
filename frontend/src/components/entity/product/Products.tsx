@@ -6,6 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { useAddCartItemMutation } from '../../../api/cart';
 import ProductRatingSummary from './ProductRatingSummary';
 import RatingForm from './RatingForm';
+import { ProductCommentsSection } from './ProductCommentsSection';
 
 interface Product {
   productId: number;
@@ -339,6 +340,7 @@ export default function Products() {
             <div className="mt-6 space-y-6">
               <ProductRatingSummary productId={selectedProduct.productId} showBreakdown />
               <RatingForm productId={selectedProduct.productId} />
+              <ProductCommentsSection productId={selectedProduct.productId} />
             </div>
           </div>
         </div>

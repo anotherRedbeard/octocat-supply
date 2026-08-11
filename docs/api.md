@@ -84,10 +84,18 @@ requests.
 | `GET`, `POST` | `/api/suppliers` | List or create suppliers |
 | `GET`, `PUT`, `DELETE` | `/api/suppliers/:id` | Read, update, or delete a supplier |
 | `GET` | `/api/suppliers/:id/status` | Derive supplier status |
+| `GET`, `POST` | `/api/products/:productId/comments` | List or create product comments |
+| `GET`, `PUT`, `DELETE` | `/api/comments/:commentId` | Read, update, or delete a comment |
+| `POST` | `/api/comments/:commentId/replies` | Create a reply to a comment |
+| `PUT`, `DELETE` | `/api/comments/:commentId/replies/:replyId` | Update or delete a reply |
+| `POST`, `DELETE` | `/api/comments/:commentId/reactions` | Set/update or remove a helpful reaction |
 
 All `:id` parameters are passed through `parseInt` without explicit validity
 checking. Non-numeric values can become `NaN` and usually result in a not-found
 response or a database error rather than a dedicated validation response.
+
+**Comment endpoints** use the `X-Comment-Token` header for ownership verification.
+See [Product Comments Guide](./features/PRODUCT_COMMENTS_GUIDE.md) for detailed endpoint documentation.
 
 ## Resource schemas
 
@@ -244,6 +252,62 @@ Example:
 | `unit` | string | Required database field |
 | `imgName` | string | Nullable in SQLite |
 | `discount` | number | Defaults to `0.0` in SQLite |
+
+### ProductComment
+
+| Field | Type | Notes |
+|---|---|---|
+| `commentId` | integer | Generated primary key |
+| `productId` | integer | Required database foreign key |
+| `authorName` | string | Optional; max 100 characters |
+| `content` | string | Required; 1–500 character limit |
+| `ownershipToken` | string | 16–255 chars, NOT exposed to frontend |
+| `createdAt` | string | ISO timestamp |
+| `updatedAt` | string | ISO timestamp |
+| `replies` | CommentReply[] | Nested replies (read-only in responses) |
+| `helpfulCount` | integer | Count of helpful reactions |
+| `userReaction` | UserReaction | Current user's reaction (if token provided) |
+
+**Example response:**
+
+```json
+{
+  "commentId": 1,
+  "productId": 123,
+  "authorName": "Alice",
+  "content": "Great product! Exactly what I needed.",
+  "createdAt": "2026-08-10T14:22:00Z",
+  "updatedAt": "2026-08-10T14:22:00Z",
+  "helpfulCount": 3,
+  "replies": [
+    {
+      "replyId": 5,
+      "commentId": 1,
+      "authorName": "Bob",
+      "content": "I agree!",
+      "createdAt": "2026-08-10T14:25:00Z",
+      "updatedAt": "2026-08-10T14:25:00Z",
+      "helpfulCount": 1,
+      "userReaction": null
+    }
+  ],
+  "userReaction": {
+    "reactionId": 12,
+    "isHelpful": true
+  }
+}
+```
+
+**Create request body:**
+
+```json
+{
+  "content": "Great product!",
+  "authorName": "Alice"
+}
+```
+
+Requests must include `X-Comment-Token` header for ownership tracking.
 
 ### Supplier
 
