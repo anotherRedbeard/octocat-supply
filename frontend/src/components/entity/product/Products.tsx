@@ -3,6 +3,10 @@ import axios from 'axios';
 import { useQuery } from 'react-query';
 import { api } from '../../../api/config';
 import { useTheme } from '../../../context/ThemeContext';
+import { useAddCartItemMutation } from '../../../api/cart';
+import ProductRatingSummary from './ProductRatingSummary';
+import RatingForm from './RatingForm';
+import { ProductCommentsSection } from './ProductCommentsSection';
 
 interface Product {
   productId: number;
@@ -26,8 +30,10 @@ export default function Products() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [pendingProductId, setPendingProductId] = useState<number | null>(null);
   const { data: products, isLoading, error } = useQuery('products', fetchProducts);
   const { darkMode } = useTheme();
+  const addCartItemMutation = useAddCartItemMutation();
 
   const filteredProducts = products?.filter(
     (product) =>
@@ -52,12 +58,21 @@ export default function Products() {
   const handleAddToCart = (productId: number) => {
     const quantity = quantities[productId] || 0;
     if (quantity > 0) {
-      // TODO: Implement cart functionality
-      alert(`Added ${quantity} items to cart`);
-      setQuantities((prev) => ({
-        ...prev,
-        [productId]: 0,
-      }));
+      setPendingProductId(productId);
+      addCartItemMutation.mutate(
+        { productId, quantity },
+        {
+          onSuccess: () => {
+            setQuantities((prev) => ({
+              ...prev,
+              [productId]: 0,
+            }));
+          },
+          onSettled: () => {
+            setPendingProductId(null);
+          },
+        },
+      );
     }
   };
 
@@ -126,6 +141,18 @@ export default function Products() {
             </svg>
           </div>
 
+          {addCartItemMutation.isError && (
+            <div className="rounded-lg border border-red-400 bg-red-50 text-red-700 px-4 py-3">
+              Could not add item to cart. Please try again.
+            </div>
+          )}
+
+          {addCartItemMutation.isSuccess && !addCartItemMutation.isLoading && (
+            <div className="rounded-lg border border-green-500 bg-green-50 text-green-700 px-4 py-3">
+              Cart updated successfully.
+            </div>
+          )}
+
           {/* Empty state when no products match */}
           {(!filteredProducts || filteredProducts.length === 0) && (
             <div
@@ -189,6 +216,9 @@ export default function Products() {
                   >
                     {product.description}
                   </p>
+                  <div className="mb-4 min-h-[1.5rem]">
+                    <ProductRatingSummary productId={product.productId} />
+                  </div>
                   <div className="space-y-4 mt-auto">
                     <div className="flex justify-between items-center">
                       {hasDiscount ? (
@@ -241,11 +271,16 @@ export default function Products() {
                           ? 'bg-primary hover:bg-accent text-white'
                           : `${darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-500'} cursor-not-allowed`
                           }`}
-                        disabled={!quantities[product.productId]}
+                        disabled={
+                          !quantities[product.productId] ||
+                          (addCartItemMutation.isLoading && pendingProductId === product.productId)
+                        }
                         aria-label={`Add ${quantities[product.productId] || 0} ${product.name} to cart`}
                         id={`add-to-cart-${product.productId}`}
                       >
-                        Add to Cart
+                        {addCartItemMutation.isLoading && pendingProductId === product.productId
+                          ? 'Adding...'
+                          : 'Add to Cart'}
                       </button>
                     </div>
                   </div>
@@ -270,6 +305,7 @@ export default function Products() {
             <div className="flex justify-end">
               <button
                 onClick={() => setShowModal(false)}
+                aria-label="Close product details"
                 className={`${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'} transition-colors duration-300`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,6 +337,11 @@ export default function Products() {
             >
               {selectedProduct.description}
             </p>
+            <div className="mt-6 space-y-6">
+              <ProductRatingSummary productId={selectedProduct.productId} showBreakdown />
+              <RatingForm productId={selectedProduct.productId} />
+              <ProductCommentsSection productId={selectedProduct.productId} />
+            </div>
           </div>
         </div>
       )}

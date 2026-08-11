@@ -10,6 +10,9 @@ import orderRoutes from './routes/order';
 import branchRoutes from './routes/branch';
 import headquartersRoutes from './routes/headquarters';
 import supplierRoutes from './routes/supplier';
+import cartRoutes from './routes/cart';
+import ratingRoutes from './routes/rating';
+import productCommentRoutes from './routes/productComment';
 import { initializeDatabase } from './init-db';
 import { errorHandler } from './utils/errors';
 
@@ -37,7 +40,7 @@ app.use(
   cors({
     origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Cart-Key', 'X-Rating-Token', 'X-Comment-Token', 'x-comment-token'],
     credentials: true,
   }),
 );
@@ -82,6 +85,9 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/branches', branchRoutes);
 app.use('/api/headquarters', headquartersRoutes);
 app.use('/api/suppliers', supplierRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api', ratingRoutes);
+app.use('/api', productCommentRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello, world!');

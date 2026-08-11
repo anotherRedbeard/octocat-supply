@@ -117,4 +117,34 @@ describe('Branch API', () => {
     const response = await request(app).get('/branches/999');
     expect(response.status).toBe(404);
   });
+
+  it('should return a validation error when the headquarters foreign key is invalid', async () => {
+    const response = await request(app).post('/branches').send({
+      headquartersId: 999,
+      name: 'Invalid Branch',
+      description: 'Invalid headquarters reference',
+      address: '123 Invalid St',
+      contactPerson: 'Test Person',
+      email: 'invalid@test.com',
+      phone: '555-0000',
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('should return 404 when updating or deleting a non-existing branch', async () => {
+    const branch = {
+      headquartersId: 1,
+      name: 'Missing Branch',
+      description: 'Missing branch',
+      address: '123 Missing St',
+      contactPerson: 'Test Person',
+      email: 'missing@test.com',
+      phone: '555-0000',
+    };
+
+    expect((await request(app).put('/branches/999').send(branch)).status).toBe(404);
+    expect((await request(app).delete('/branches/999')).status).toBe(404);
+  });
 });
